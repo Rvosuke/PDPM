@@ -1,0 +1,44 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: 调试LDM训练",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": [
+                "--load_vae",
+                "--vae_path",
+                "./checkpoints/vae/vae_final.pt",
+                "--train_ldm",
+                "--ldm_epochs",
+                "50",
+                "--ldm_lr",
+                "1e-5",
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Python: 调试VAE训练",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "args": [
+                "--train_vae",
+                "--vae_epochs",
+                "5",
+                "--vae_lr",
+                "1e-4",
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        }
+    ]
+}

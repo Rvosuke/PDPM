@@ -1,0 +1,6 @@
+torch==2.4.1+cu124 --extra-index-url https://download.pytorch.org/whl/cu124
+torchvision==0.15.1+cu124 --extra-index-url https://download.pytorch.org/whl/cu124
+tqdm==4.66.2
+matplotlib==3.8.2
+pillow==10.2.0
+einops==0.7.0
