@@ -17,7 +17,8 @@ PDPM（Pollutant Diffusion Prediction Model）是一个基于深度学习的污�
 
 ## 数据集描述
 
-本项目使用的数据集是在特定条件下生成的污染物扩散模拟序列图像：
+本项目使用的数据集 [基于数据驱动的污染物扩散深度学习模型png版本_数据集-飞桨AI Studio星河社区](https://aistudio.baidu.com/datasetdetail/198102) 
+是在特定条件下生成的污染物扩散模拟序列图像：
 
 - **模拟区域**：3km×3km的固定区域
 - **污染源位置**：以区域中心为坐标原点，四个象限的中心点和坐标原点构成5个可能的污染源位置
@@ -39,29 +40,31 @@ PDPM（Pollutant Diffusion Prediction Model）是一个基于深度学习的污�
 
 DDPMs的正向过程被建模为一个马尔可夫链，通过T个时间步逐步向数据添加高斯噪声。设z₀为原始数据，在时间步t的转换遵循：
 
-$$q(z_t|z_{t-1}) = \mathcal{N}(z_t; \sqrt{1-\beta_t}z_{t-1}, \beta_t\mathbf{I})$$
+$$ q(z_t|z_{t-1}) = \mathcal{N}(z_t; \sqrt{1-\beta_t}z_{t-1}, \beta_t\mathbf{I}) $$
 
-其中$\beta_t$为噪声调度参数，控制各时间步的噪声添加量。通过递推可得任意时刻t关于初始状态z₀的解析式：
+其中 $\beta_t$ 为噪声调度参数，控制各时间步的噪声添加量。通过递推可得任意时刻t关于初始状态z₀的解析式：
 
 $$z_t = \sqrt{\bar{\beta}_t}z_0 + \sqrt{1-\bar{\beta}_t}\epsilon, \quad \epsilon \sim \mathcal{N}(0,\mathbf{I})$$
 
-这里$\bar{\beta}_t = \prod_{s=1}^t \beta_s$表示累积噪声比例。随着t增大，数据逐渐失去原有结构，最终z_T近似为标准高斯分布。
+这里 $ \bar{\beta}_t = \prod_{s=1}^t \beta_s $ 表示累积噪声比例。随着t增大，数据逐渐失去原有结构，最终 $z_T$ 近似为标准高斯分布。
 
 #### 反向扩散过程
 
 反向过程旨在从噪声中重建数据，同样建模为马尔可夫链，但通过学习参数化的转移核实现：
 
-$$p_\theta(z_{t-1}|z_t) = \mathcal{N}(z_{t-1}; \mu_\theta(z_t,t), \Sigma_\theta(z_t,t))$$
+$$ 
+p_\theta(z_{t-1}|z_t) = \mathcal{N}(z_{t-1}; \mu_\theta(z_t,t), \Sigma_\theta(z_t,t)) 
+$$
 
-其中θ为可学习参数，通常由神经网络实现。反向过程从先验分布$p(z_T)=\mathcal{N}(0,\mathbf{I})$开始，通过逐步去噪最终生成数据样本z₀。
+其中θ为可学习参数，通常由神经网络实现。反向过程从先验分布 $p(z_T)=\mathcal{N}(0,\mathbf{I})$ 开始，通过逐步去噪最终生成数据样本z₀。
 
 ### 训练目标
 
-DDPMs的训练目标是使反向链的联合分布$p_\theta(z_{0:T})$尽可能匹配正向链的时间反转。这通过最小化以下损失函数实现：
+DDPMs的训练目标是使反向链的联合分布 $p_\theta(z_{0:T})$ 尽可能匹配正向链的时间反转。这通过最小化以下损失函数实现：
 
 $$\mathbb{E}_{t,z_0,\epsilon}\left[\|\epsilon - \epsilon_\theta(z_t,t)\|^2\right]$$
 
-其中$\epsilon_\theta$为噪声预测网络，通常采用U-Net架构。条件扩散模型则扩展为$\epsilon_\theta(z_t,t,C)$，C表示条件变量。
+其中 $\epsilon_\theta$ 为噪声预测网络，通常采用U-Net架构。条件扩散模型则扩展为 $\epsilon_\theta(z_t,t,C)$ ，C表示条件变量。
 
 ### 扩散模型的优势与应用
 
