@@ -84,6 +84,7 @@ def evaluate_prediction(pred_frames, true_frames, threshold=0.5):
 
     # MSE
     mse = F.mse_loss(pred_frames, true_frames).item()
+    mse = torch.tensor(mse)
 
     # PSNR
     psnr = 10 * torch.log10(1 / mse).item() if mse > 0 else float("inf")

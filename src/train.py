@@ -7,7 +7,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils import evaluate_prediction
+from src.utils import evaluate_prediction
 
 
 def train_vae(model, train_dataloader, optimizer, device, num_epochs=10):
@@ -100,6 +100,7 @@ def train_ldm(
     model.to(device)
     loss_history = []
     metrics_history = []
+    best_psnr = 0
 
     for epoch in range(num_epochs):
         model.train()
@@ -164,7 +165,7 @@ def train_ldm(
         )
 
         # 每N个epoch评估一次
-        if (epoch + 1) % 5 == 0:
+        if (epoch + 1) % 1 == 0:
             metrics = evaluate_model(model, val_dataloader, device)
             print(f"Epoch {epoch+1} 验证指标:")
             for k, v in metrics.items():

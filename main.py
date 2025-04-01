@@ -5,10 +5,10 @@ import argparse
 import os
 import matplotlib.pyplot as plt
 
-from diffusion_model import LDM, VAE, UNetDiffusion
-from dataset import get_data_loaders
-from train import train_vae, train_ldm, visualize_predictions, evaluate_model
-from utils import count_parameters
+from src.diffusion_model import LDM, VAE, UNetDiffusion
+from src.dataset import get_data_loaders
+from src.train import train_vae, train_ldm, visualize_predictions, evaluate_model
+from src.utils import count_parameters
 
 
 def main(args):
@@ -74,7 +74,7 @@ def main(args):
     if args.load_ldm:
         ldm_path = args.ldm_path
         if os.path.exists(ldm_path):
-            checkpoint = torch.load(ldm_path, map_location=device, weights_only=True)
+            checkpoint = torch.load(ldm_path, map_location=device)
             model.load_state_dict(checkpoint["model_state_dict"])
             print(f"加载预训练LDM模型: {ldm_path}")
         else:
@@ -172,12 +172,14 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="污染物扩散预测扩散模型")
 
+
     # 数据参数
-    parser.add_argument("--data_dir", type=str, default="./data1", help="数据目录")
-    parser.add_argument("--batch_size", type=int, default=8, help="批次大小")
-    parser.add_argument("--num_workers", type=int, default=4, help="数据加载线程数")
+    parser.add_argument("--data_dir", type=str, default="/data/baizy25/pdpm/data1", help="数据目录")
+    parser.add_argument("--batch_size", type=int, default=114, help="批次大小")
+    parser.add_argument("--num_workers", type=int, default=16, help="数据加载线程数")
     parser.add_argument("--sequence_length", type=int, default=2, help="序列长度")
     parser.add_argument("--img_size", type=int, default=256, help="图像尺寸")
+    parser.add_argument("--gpu", type=int, default=0, help="GPU编号")
 
     # 模型参数
     parser.add_argument("--latent_dim", type=int, default=4, help="VAE潜在空间维度")
@@ -189,7 +191,7 @@ if __name__ == "__main__":
     parser.add_argument("--vae_lr", type=float, default=1e-4, help="VAE学习率")
 
     parser.add_argument("--train_ldm", action="store_true", help="是否训练LDM")
-    parser.add_argument("--ldm_epochs", type=int, default=50, help="LDM训练轮数")
+    parser.add_argument("--ldm_epochs", type=int, default=20, help="LDM训练轮数")
     parser.add_argument("--ldm_lr", type=float, default=1e-5, help="LDM学习率")
     parser.add_argument("--weight_decay", type=float, default=1e-5, help="权重衰减")
 
@@ -205,9 +207,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ldm_path",
         type=str,
-        default="./checkpoints/ldm/ldm_final.pt",
+        default="./checkpoints/ldm/ldm_best.pt",
         help="预训练LDM路径",
     )
-
+    
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(parser.parse_args().gpu)
     args = parser.parse_args()
     main(args)
