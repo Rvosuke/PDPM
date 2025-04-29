@@ -99,7 +99,7 @@ def train_ldm(
     """
     model.to(device)
     loss_history = []
-    metrics_history = []
+    metrics_history = {}
     best_psnr = 0
 
     for epoch in range(num_epochs):
@@ -170,8 +170,9 @@ def train_ldm(
             print(f"Epoch {epoch+1} 验证指标:")
             for k, v in metrics.items():
                 print(f"  {k}: {v:.6f}")
-            metrics_history.append(metrics)
-            # 可以使用TensorBoard或其他工具记录指标
+                if k not in metrics_history:
+                    metrics_history[k] = []
+                metrics_history[k].append(v)
 
             # 保存最佳模型
             if metrics["psnr"] > best_psnr:
@@ -235,54 +236,84 @@ def visualize_vae_reconstruction(model, dataloader, epoch, device, num_samples=4
     plt.close()
 
 
-def visualize_predictions(model, dataloader, epoch, device, num_samples=4):
-    """可视化模型预测结果"""
-    model.eval()
+def visualize_predictions(
+    model, dataloader, epoch, device, num_samples=40, sequence_length=5
+):
+    """
+    可视化模型连续预测结果
 
-    # 获取一些样本
-    inputs, targets, params, _ = next(iter(dataloader))
-    inputs = inputs[:num_samples].to(device)
-    targets = targets[:num_samples].to(device)
-    params = params[:num_samples].to(device)
+    Args:
+        model: 模型
+        dataloader: 数据加载器
+        epoch: 当前轮次
+        device: 设备
+        num_samples: 可视化样本数量
+        sequence_length: 连续预测的帧数
+    """
+    model.eval()
+    model.to(device)
+
+    # 获取初始样本
+    inputs, targets, params, timestep = next(iter(dataloader))
+    inputs = inputs[:num_samples:10].to(device)
+    targets = (
+        targets[:num_samples]
+        .reshape(num_samples // 10, 10, *targets.shape[1:])
+        .to(device)
+    )
+    params = (
+        params[:num_samples]
+        .reshape(num_samples // 10, 10, *params.shape[1:])
+        .to(device)
+    )
+    timestep = timestep[:num_samples].reshape(num_samples // 10, 10).to(device)
+    num_samples = num_samples // 10
+    print(
+        f"inputs: {inputs.shape}, targets: {targets.shape}, params: {params.shape}, timestep: {timestep.shape}"
+    )
+
+    # 存储连续预测结果
+    all_frames = [inputs.cpu()]  # 存储初始帧
+    current_input = inputs.to(device)
 
     with torch.no_grad():
-        # 获取预测结果
-        preds = model.predict_next_frame(inputs, params)
+        for t in range(1, sequence_length + 1):
+            t = t * 2 - 1
+            current_params = params[:, t].to(device)
+            current_timestep = timestep[:, t].to(device)
+            pred = model.predict_next_frame(
+                current_input, current_params, current_timestep
+            )
+            # print(f"timestep: {timestep}, params: {params}")
+            all_frames.append(pred.cpu())
+            current_input = targets[:, t].to(device)
 
-    # 将结果转换为numpy数组用于可视化
-    inputs = inputs.cpu().numpy()
-    targets = targets.cpu().numpy()
-    preds = preds.cpu().numpy()
-
-    # 规范化到[0,1]以便可视化
-    inputs = (inputs + 1) / 2.0
-    targets = (targets + 1) / 2.0
-    preds = (preds + 1) / 2.0
+    # 将所有帧转换为numpy数组并规范化到[0,1]
+    all_frames = [(frame + 1) / 2.0 for frame in all_frames]
+    all_frames = [frame.numpy() for frame in all_frames]
 
     # 创建图表
-    fig, axes = plt.subplots(3, num_samples, figsize=(3 * num_samples, 9))
+    fig, axes = plt.subplots(
+        num_samples,
+        sequence_length + 1,
+        figsize=(3 * (sequence_length + 1), 3 * num_samples),
+    )
 
     for i in range(num_samples):
-        # 显示输入图像
-        axes[0, i].imshow(np.transpose(inputs[i], (1, 2, 0)))
-        axes[0, i].set_title("Input")
-        axes[0, i].axis("off")
+        for t in range(sequence_length + 1):
+            if t == 0:
+                title = "Input"
+            else:
+                title = f"t+{t}"
 
-        # 显示目标图像
-        axes[1, i].imshow(np.transpose(targets[i], (1, 2, 0)))
-        axes[1, i].set_title("Target")
-        axes[1, i].axis("off")
-
-        # 显示预测图像
-        axes[2, i].imshow(np.transpose(preds[i], (1, 2, 0)))
-        axes[2, i].set_title("Prediction")
-        axes[2, i].axis("off")
+            axes[i, t].imshow(np.transpose(all_frames[t][i], (1, 2, 0)))
+            axes[i, t].set_title(title)
+            axes[i, t].axis("off")
 
     plt.tight_layout()
 
-    # 保存图像
     os.makedirs("./results", exist_ok=True)
-    plt.savefig(f"./results/frame_predictions_{epoch}.png", dpi=200)
+    plt.savefig(f"./results/sequence_predictions_{epoch}.png", dpi=200)
     plt.close()
 
 

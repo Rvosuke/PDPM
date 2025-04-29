@@ -122,6 +122,7 @@ def get_data_loaders(
     sequence_length=2,
     num_workers=4,
     img_size=256,
+    shuffle=False,
 ):
     """
     创建训练、验证和测试数据加载器
@@ -150,9 +151,19 @@ def get_data_loaders(
     test_size = dataset_size - train_size - val_size
 
     # 随机划分数据集
-    train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(
-        dataset, [train_size, val_size, test_size]
-    )
+    if shuffle:
+        train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(
+            dataset, [train_size, val_size, test_size]
+        )
+    else:
+        indices = list(range(dataset_size))
+        train_indices = indices[:train_size]
+        val_indices = indices[train_size : train_size + val_size]
+        test_indices = indices[train_size + val_size :]
+
+        train_dataset = torch.utils.data.Subset(dataset, train_indices)
+        val_dataset = torch.utils.data.Subset(dataset, val_indices)
+        test_dataset = torch.utils.data.Subset(dataset, test_indices)
 
     # 创建数据加载器
     train_loader = DataLoader(

@@ -56,6 +56,7 @@ def main(args):
         denoise_network=denoise_network,
         vae=vae,
     )
+    model = model.to(device)
 
     print(f"模型创建完成，参数量: {count_parameters(model) / 1e6:.2f}M")
 
@@ -134,10 +135,11 @@ def main(args):
 
         # 绘制metrics历史
         plt.figure(figsize=(12, 6))
+
         for metric_name, values in metrics_history.items():
             plt.plot(values, label=metric_name)
         plt.title("Validation Metrics History")
-        plt.xlabel("Epoch/5")
+        plt.xlabel("Epoch")
         plt.ylabel("Value")
         plt.legend()
         plt.grid(True)
@@ -157,15 +159,15 @@ def main(args):
     # 测试模型
     print("开始评估模型...")
     model.eval()
-    metrics = evaluate_model(model, test_loader, device)
-    print(f"测试指标:")
-    for k, v in metrics.items():
-        print(f"  {k}: {v:.6f}")
+    # metrics = evaluate_model(model, test_loader, device)
+    # print(f"测试指标:")
+    # for k, v in metrics.items():
+    #     print(f"  {k}: {v:.6f}")
     # Save metrics to a file
-    with open("./results/test_metrics.txt", "w") as f:
-        for metric, value in metrics.items():
-            f.write(f"{metric}: {value:.6f}\n")
-    visualize_predictions(model, test_loader, "test", device, num_samples=8)
+    # with open("./results/test_metrics.txt", "w") as f:
+    #     for metric, value in metrics.items():
+    #         f.write(f"{metric}: {value:.6f}\n")
+    visualize_predictions(model, test_loader, "test", device)
     print("模型评估完成，结果已保存到'results'文件夹")
 
 

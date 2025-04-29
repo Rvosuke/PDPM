@@ -416,13 +416,13 @@ class LDM(nn.Module):
 
         return x_t1_pred, z_t0, z_t1_pred
 
-    def predict_next_frame(self, x_t0, cond):
+    def predict_next_frame(self, x_t0, cond, t=None):
         """从当前帧预测下一帧 (用于推理)"""
         device = x_t0.device
         batch_size = x_t0.shape[0]
 
         # 固定时间步为1 (单步预测)
-        t = torch.ones(batch_size, device=device, dtype=torch.long)
+        t = torch.ones(batch_size, device=device, dtype=torch.long) if t is None else t
 
         # 编码到潜在空间
         with torch.no_grad():
